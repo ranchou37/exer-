@@ -37,18 +37,20 @@ jobs:
           libffi-dev \
           libssl-dev
 
+    # 🔴 핵심: Buildozer가 쓰는 SDK 경로로 고정
+    - name: Set Android SDK path for Buildozer
+      run: |
+        echo "ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "PATH=$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$HOME/.buildozer/android/platform/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
+
     - name: Install Android SDK cmdline-tools
       run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        cd $HOME/android-sdk/cmdline-tools
+        mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+        cd $ANDROID_SDK_ROOT/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         unzip commandlinetools-linux-*.zip
         mv cmdline-tools latest
-
-    - name: Set Android SDK environment
-      run: |
-        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
 
     - name: Accept Android SDK licenses
       run: |
@@ -68,7 +70,6 @@ jobs:
 
     - name: Build APK
       run: |
-        ls -la
         buildozer android debug
 
     - name: Upload APK
