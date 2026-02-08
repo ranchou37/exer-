@@ -3,61 +3,78 @@ name: Build Android APK (Hello Test)
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 🔹 Java 17 (가장 중요)
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 🔹 Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
+      # 🔹 시스템 패키지
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y \
-            git zip unzip openjdk-17-jdk \
-            python3-pip python3-setuptools python3-wheel \
+            zip unzip git \
+            openjdk-17-jdk \
             libncurses5 libstdc++6 zlib1g \
             libffi-dev libssl-dev
 
+      # 🔹 Android SDK cmdline-tools
       - name: Install Android SDK cmdline-tools
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
           cd $HOME/android-sdk/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip commandlinetools-linux-*.zip
+          unzip commandlinetools-linux-11076708_latest.zip
           mv cmdline-tools latest
 
+      # 🔹 SDK 환경변수
       - name: Set Android SDK environment
         run: |
           echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+          echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
 
+      # 🔹 라이선스 자동 동의
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
+        run: |
+          yes | sdkmanager --licenses
 
+      # 🔹 필수 SDK 설치
       - name: Install required SDK packages
         run: |
           sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
+      # 🔹 Buildozer 설치
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.36
 
+      # 🔹 APK 빌드
       - name: Build APK
-        run: buildozer android debug
+        run: |
+          buildozer android debug
 
+      # 🔹 APK 업로드
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: apk
+          name: hello-apk
           path: bin/*.apk
