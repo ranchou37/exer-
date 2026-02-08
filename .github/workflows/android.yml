@@ -3,11 +3,11 @@ name: Build Android APK (Hello Test)
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout repository
@@ -16,36 +16,35 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: '3.10'
 
     - name: Install system dependencies
       run: |
         sudo apt update
         sudo apt install -y \
-          zip unzip git \
           openjdk-17-jdk \
-          libncurses6 libncurses-dev \
-          libstdc++6 zlib1g \
-          libffi-dev libssl-dev
+          zip unzip git \
+          python3-pip python3-setuptools python3-wheel \
+          libffi-dev libssl-dev zlib1g-dev
 
     - name: Set JAVA_HOME
       run: |
         echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
-        echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> $GITHUB_PATH
+        echo "$JAVA_HOME/bin" >> $GITHUB_PATH
 
     - name: Install Android SDK cmdline-tools
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
         cd $HOME/android-sdk/cmdline-tools
         wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip commandlinetools-linux-*.zip
+        unzip commandlinetools-linux-11076708_latest.zip
         mv cmdline-tools latest
 
     - name: Set Android SDK environment
       run: |
-        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+        echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
     - name: Accept Android SDK licenses
       run: yes | sdkmanager --licenses
@@ -64,10 +63,12 @@ jobs:
 
     - name: Build APK
       run: |
+        cd $GITHUB_WORKSPACE
+        ls -la
         buildozer android debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: apk
+        name: hello-kivy-apk
         path: bin/*.apk
